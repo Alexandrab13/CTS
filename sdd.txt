@@ -1,0 +1,488 @@
+//----------------------ARBORE---------------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<string.h>
+#include<stdlib.h>
+#include<stdio.h>
+#include<malloc.h>
+#include<limits.h>
+
+typedef struct Rezervare Rezervare;
+typedef struct Nod Nod;
+
+struct Rezervare
+{
+	unsigned int cod;
+	char* denumireHotel;
+	unsigned char nrCamere;
+	char* numeClient;
+	float plata;
+};
+
+struct Nod
+{
+	Rezervare rezervare;
+	Nod* stanga;
+	Nod* dreapta;
+};
+
+void inserareNod(Nod** radacina, Rezervare r)
+{
+	if (*radacina != NULL)
+	{
+		if (r.cod < (*radacina)->rezervare.cod)
+		{
+			inserareNod(&(*radacina)->stanga, r);
+		}
+		else
+		{
+			inserareNod(&(*radacina)->dreapta, r);
+		}
+	}
+	else
+	{
+Nod* nou = (Nod*)malloc(sizeof(Nod));
+		nou->rezervare = r;
+		nou->stanga = NULL;
+		nou->dreapta = NULL;
+		(*radacina) = nou;
+	}
+}
+
+Rezervare initializareRezervare(unsigned int cod, char* denumireHotel, unsigned char nrCamere, char* numeClient, float plata)
+{
+	Rezervare r;
+	r.cod = cod;
+	r.denumireHotel = (char*)malloc(sizeof(char) * (strlen(denumireHotel) + 1));
+	strcpy(r.denumireHotel, denumireHotel);
+	r.nrCamere = nrCamere;
+	r.numeClient = (char*)malloc(sizeof(char) * (strlen(numeClient) + 1));
+	strcpy(r.numeClient, numeClient);
+	r.plata = plata;
+	return r;
+}
+
+void afisareRezervare(Rezervare r)
+{
+	printf("Rezervarea cu codul %d are hotelul %s, %d cmere,clientul %s si suma de plata %.2f.\n", r.cod, r.denumireHotel, r.nrCamere, r.numeClient, r.plata);
+}
+
+void afisareInordine(Nod* radacina)
+{
+	if (radacina) {
+		afisareInordine(radacina->stanga);
+		afisareRezervare(radacina->rezervare);
+		afisareInordine(radacina->dreapta);
+	}
+}
+
+void afisarePreOrdine(Nod* radacina)
+{
+	if (radacina)
+{
+		if (strcmp(radacina->rezervare.numeClient, numeClient) == 0)
+		{
+			return radacina->rezervare.plata + calculValoareRezervare(numeClient, radacina->stanga) + calculValoareRezervare(numeClient, radacina->dreapta);
+		}
+		else
+		{
+			return calculValoareRezervare(numeClient, radacina->stanga) + calculValoareRezervare(numeClient, radacina->dreapta);
+		}
+	}
+	else
+		return 0;
+}
+
+//calculeaza numarul rezervarilor
+int calculNumarRezervare(const char* numeClient, Nod* radacina)
+{
+	int numarRezervari = 0;
+
+	if (radacina)
+	{
+		if (strcmp(radacina->rezervare.numeClient, numeClient) == 0)
+		{
+			numarRezervari++;
+		}
+		numarRezervari += calculNumarRezervare(numeClient, radacina->stanga);
+		numarRezervari += calculNumarRezervare(numeClient, radacina->dreapta);
+}
+	return numarRezervari;
+}
+
+int calculCheieMinima(Nod* radacina)
+{
+	if (radacina->stanga == NULL)
+	{
+		return radacina->rezervare.cod;
+	}
+	else
+	{
+		return calculCheieMinima(radacina->stanga);
+	}
+}
+
+void stergereCheieMinima(Nod** radacina)
+{
+	if (*radacina != NULL)
+	{
+		if ((*radacina)->stanga == NULL)
+		{
+			Nod* temp = (*radacina);
+			(*radacina) = (*radacina)->dreapta;
+			free(temp->rezervare.denumireHotel);
+			free(temp->rezervare.numeClient);
+			free(temp);
+		}
+		else
+		{
+			stergereCheieMinima(&(*radacina)->dreapta);
+		}
+	}
+}
+
+//stergerea unui nod in functie de id-ul dat ca parametru
+Nod* stergereRadacina(Nod* radacina)
+{
+	Nod* aux = radacina;
+	if (aux->stanga != NULL)
+	{
+		radacina = aux->stanga;
+		if (aux->dreapta != NULL)
+{
+			Nod* temp = aux->stanga;
+			while (temp->dreapta)
+			{
+				temp = temp->dreapta;
+			}
+			temp->dreapta = aux->dreapta;
+		}
+	}
+	else
+	{
+		if (aux->dreapta != NULL)
+			radacina = aux->dreapta;
+		else
+		{
+			radacina = NULL;
+		}
+	}
+	free(aux->rezervare.denumireHotel);
+	free(aux->rezervare.nrCamere);
+	free(aux);
+	return radacina;
+}
+
+int maxim(int a, int b)
+{
+	int max = a;
+	if (max < b)
+		max = b;
+	return max;
+}
+
+int calculInaltimeArbore(Nod* radacina)
+{
+	if (radacina != NULL)
+	{
+		return 1 + maxim(calculInaltimeArbore(radacina->stanga), calculInaltimeArbore(radacina->dreapta));
+}
+	else
+	{
+		return 0;
+	}
+}
+
+void calculNoduriFrunza(Nod* radacina, int* nr)
+{
+	if (radacina != NULL)
+	{
+		if (radacina->stanga == NULL && radacina->dreapta == NULL)
+		{
+			(*nr)++;
+		}
+		calculNoduriFrunza(radacina->stanga, nr);
+		calculNoduriFrunza(radacina->dreapta, nr);
+	}
+}
+
+void dezalocare(Nod* radacina)
+{
+	if (radacina != NULL)
+	{
+		free(radacina->rezervare.denumireHotel);
+		free(radacina->rezervare.numeClient);
+		dezalocare(radacina->stanga);
+		dezalocare(radacina->dreapta);
+		free(radacina);
+	}
+}
+
+int main()
+{
+	Nod* radacina = NULL;
+	FILE* f = fopen("Text.txt", "r");
+
+	if (f)
+	{
+		char buffer[50];
+		fgets(buffer, sizeof(buffer), f);
+		int nrElemente = atoi(buffer);
+
+		for (int i = 0; i < nrElemente; i++)
+{
+			fgets(buffer, sizeof(buffer), f);
+			unsigned int cod = atoi(buffer);
+
+			fgets(buffer, sizeof(buffer), f);
+			char* denumireHotel = (char*)malloc(sizeof(char) * (strlen(buffer) + 1));
+			strcpy(denumireHotel, buffer);
+			denumireHotel[strlen(denumireHotel) - 1] = '\0';
+
+			fgets(buffer, sizeof(buffer), f);
+			unsigned char numarCamere = atoi(buffer);
+
+			fgets(buffer, sizeof(buffer), f);
+			char* numeClient = (char*)malloc(sizeof(char) * (strlen(buffer) + 1));
+			strcpy(numeClient, buffer);
+			numeClient[strlen(numeClient) - 1] = '\0';
+
+			fgets(buffer, sizeof(buffer), f);
+			float plata = atof(buffer);
+
+			Rezervare r = initializareRezervare(cod, denumireHotel, numarCamere, numeClient, plata);
+			inserareNod(&radacina, r);
+			afisareRezervare(r);
+		}
+		afisarePreOrdine(radacina);
+		printf("afisare inordine.\n\n");
+		afisareInordine(radacina);
+
+		printf("Inaltime arbori: %d \n", calculInaltimeArbore(radacina));
+		printf("Valoarea rezervarilor pentru clientul %s este de %.2f:\n", "John", calculValoareRezervare("John", radacina));
+		printf("Clientul %s are %d rezervari.\n", "John", calculNumarRezervari("John", radacina));
+		stergereCheieMin(&radacina);
+		afisareInordine(radacina);
+
+		printf("\nCalcul nr noduri frunza:");
+		int nrFrunza = 0;
+		nrNoduriFrunaza(radacina, &nrFrunza);
+		printf("\nArborele are %d frunze", nrFrunza);
+		dezalocare(radacina);
+		printf("\n\nS-a dezalocat memoria!");
+	}
+}
+
+//-------------------------------LISTA DUBLA---------------------------
+
+#define _CRT_SECURE_NO_WARNINGS
+#include<stdio.h>
+#include<stdlib.h>
+#include<malloc.h>
+#include<string.h>
+#include<limits.h>
+
+typedef struct Vagon Vagon;
+typedef struct Nod Nod;
+typedef struct LDI LDI;
+
+struct Vagon {
+	int numarVagon;
+	char* firmaTransport;
+	int numarBileteVandute;
+	int capacitate;
+};
+
+struct Nod {
+	Vagon vagon;
+	Nod* next;
+	Nod* prev;
+};
+
+struct LDI {
+	Nod* prim;
+	Nod* ultim;
+};
+
+void inserareSfarsit(LDI* lista, Vagon v) {
+	Nod* nou = (Nod*)malloc(sizeof(Nod));
+	nou->vagon = v;
+	nou->next = NULL;
+	nou->prev = lista->ultim;
+	if (lista->ultim) {
+	lista->ultim->next = nou;
+	}
+	else {
+		lista->prim = nou;
+	}
+	lista->ultim = nou;
+}
+
+Vagon initializareVagon(int numarVagon, char* firmaTransport, int numarBileteVandute, int capacitate) {
+	Vagon v;
+	v.numarVagon = numarVagon;
+	v.firmaTransport = (char*)malloc(sizeof(char) * (strlen(firmaTransport) + 1));
+	strcpy(v.firmaTransport, firmaTransport);
+	v.numarBileteVandute = numarBileteVandute;
+	v.capacitate = capacitate;
+	return v;
+}
+
+void afisareVagon(Vagon v) {
+	printf("Vagonul cu numarul %d de la firma %s a vandut %d din %d bilete.\n", v.numarVagon, v.firmaTransport, v.numarBileteVandute, v.capacitate);
+}
+
+void afisareInceputFinal(LDI lista) {
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+		afisareVagon(nodCurent->vagon);
+		nodCurent = nodCurent->next;
+	}
+}
+
+void afisareFinalInceput(LDI lista) {
+	Nod* nodCurent = lista.ultim;
+	while (nodCurent) {
+		afisareVagon(nodCurent->vagon);
+		nodCurent = nodCurent->prev;
+	}
+}
+int numarBileteVandutePerFirma(LDI lista, const char* firmaTransport) {
+	int nr = 0;
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+if (strcmp(nodCurent->vagon.firmaTransport, firmaTransport) == 0) {
+			nr += nodCurent->vagon.numarBileteVandute;
+		}
+		nodCurent = nodCurent->next;
+	}
+	return nr;
+}
+float calculMinimBilete(LDI lista) {
+	int min = INT_MAX;
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+		if (nodCurent->vagon.numarBileteVandute < min) {
+			min = nodCurent->vagon.numarBileteVandute;
+		}
+		nodCurent = nodCurent->next;
+	}
+	return min;
+}
+
+int calculMaximBilete(LDI lista) {
+	int max = INT_MIN;
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+		if (nodCurent->vagon.numarBileteVandute > max) {
+			max = nodCurent->vagon.numarBileteVandute;
+		}
+		nodCurent = nodCurent->next;
+	}
+	return max;
+}
+
+float calculNumarMediuBilete(LDI lista, const char* firmaTransport) {
+	int numarMediuBilete = 0;
+	int numarFirma = 0;
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+		if (strcmp(nodCurent->vagon.firmaTransport, firmaTransport) == 0) {
+			numarMediuBilete += nodCurent->vagon.numarBileteVandute;
+			numarFirma++;
+		}
+		nodCurent = nodCurent->next;
+	}
+	return (float)numarMediuBilete / numarFirma;
+}
+void stergereMin(LDI* lista) {
+	int min = calculMinimBilete((*lista));
+	Nod* nodCurent = lista->prim;
+	while (nodCurent) {
+		Nod* urm = nodCurent->next;
+		if (nodCurent->vagon.numarBileteVandute == min) {
+			free(nodCurent->vagon.firmaTransport);
+
+			if (nodCurent->prev) {
+				nodCurent->prev->next = nodCurent->next;
+			}
+			else {
+				lista->prim = nodCurent->next;
+			}
+			if (nodCurent->next) {
+				nodCurent->next->prev = nodCurent->prev;
+			}
+			else {
+				lista->ultim = nodCurent->prev;
+			}
+			free(nodCurent);
+		}
+		nodCurent = urm;
+	}
+}
+//sa se actualizeze capacitatea avand firmaTransport specificata;
+void actualizeazaCapacitate(LDI lista, const char* firmaTransport, int capacitate) {
+	Nod* nodCurent = lista.prim;
+	while (nodCurent) {
+		if (strcmp(nodCurent->vagon.firmaTransport, firmaTransport) == 0) {
+			nodCurent->vagon.capacitate = capacitate;
+		}
+		nodCurent = nodCurent->next;
+	}
+}
+void dezalocareLDI(LDI* lista) {
+	Nod* nodCurent = lista->prim;
+	while (nodCurent) {
+		Nod* nodUrm = nodCurent->next;
+		free(nodCurent->vagon.firmaTransport);
+		free(nodCurent);
+		nodCurent = nodUrm;
+	}
+	lista->prim = NULL;
+	lista->ultim = NULL;
+}
+int main() {
+	LDI lista;
+	lista.prim = NULL;
+	lista.ultim = NULL;
+	FILE* f = fopen("fisier.txt", "r");
+	if (f) {
+		char buffer[50];
+		while (fgets(buffer, sizeof(buffer), f)) {
+			int numarVagon = atoi(buffer);
+			fgets(buffer, sizeof(buffer), f);
+			char* firma = (char*)malloc(sizeof(char) * (strlen(buffer) + 1));
+			strcpy(firma, buffer);
+			firma[strlen(firma) - 1] = '\0';
+			fgets(buffer, sizeof(buffer), f);
+			int nrBilete = atoi(buffer);
+			fgets(buffer, sizeof(buffer), f);
+			int capacitate = atoi(buffer);
+
+			Vagon v = initializareVagon(numarVagon, firma, nrBilete, capacitate);
+			inserareSfarsit(&lista, v);
+
+		}
+		printf("Afisare inceput final: \n");
+		printf(" ");
+		afisareInceputFinal(lista);
+		printf("Afisare final inceput: \n");
+		printf(" ");
+		afisareFinalInceput(lista);
+
+		printf("Firma %s a vandut in medie %.2f bilete.\n", "firma1", calculNumarMediuBilete(lista, "firma1"));
+
+		printf("Stergere minim: \n ");
+		stergereMin(&lista);
+		afisareInceputFinal(lista);
+
+		printf("Actualizare: \n");
+		actualizeazaCapacitate(lista, "firma3", 10293);
+		afisareInceputFinal(lista);
+		printf("dezalocare\n");
+		dezalocareLDI(&lista);
+		printf("Firma %s are %d bilete.\n", "firma1", numarBileteVandutePerFirma(lista, "firma1"));
+		printf("Numarul maxim de bilete vandute %d.\n", calculMaximBilete(lista));
+		afisareInceputFinal(lista);
+	}
+}
